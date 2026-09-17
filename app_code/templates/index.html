@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Семантическая Библиотека ВУЗа + ИИ</title>
+    <link href="https://googleapis.com" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; margin: 0; padding: 40px 20px; color: #1f2937; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .header { text-align: center; margin-bottom: 40px; }
+        .header h1 { font-size: 2.5rem; color: #111827; margin-bottom: 10px; }
+        .header p { color: #6b7280; font-size: 1.1rem; }
+        .search-box { display: flex; gap: 12px; background: white; padding: 10px; border-radius: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 30px; }
+        input[type="text"] { flex: 1; border: none; padding: 12px 16px; font-size: 1.1rem; outline: none; }
+        button { background-color: #2563eb; color: white; border: none; padding: 12px 28px; font-size: 1rem; font-weight: 500; border-radius: 12px; cursor: pointer; }
+        button:hover { background-color: #1d4ed8; }
+        .status-badge { display: inline-block; background-color: #d1fae5; color: #065f46; padding: 6px 12px; border-radius: 9999px; font-size: 0.85rem; font-weight: 500; margin-bottom: 20px; }
+        .ai-box { background: #eff6ff; border: 1px solid #bfdbfe; padding: 20px; border-radius: 16px; margin-bottom: 24px; display: none; }
+        .ai-title { font-weight: 600; color: #1e40af; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+        .ai-content { line-height: 1.6; color: #1e3a8a; }
+        .card { background: white; padding: 24px; border-radius: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); margin-bottom: 16px; border-left: 4px solid #2563eb; }
+        .card-title { font-size: 1.25rem; font-weight: 600; color: #111827; margin-bottom: 10px; display: flex; justify-content: space-between; }
+        .score { font-size: 0.85rem; background: #f3f4f6; color: #4b5563; padding: 4px 8px; border-radius: 6px; }
+        .card-abstract { color: #4b5563; line-height: 1.6; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎓 Цифровая Библиотека ВУЗа</h1>
+            <p>Умный семантический поиск + Генеративный ИИ-ответ (RAG-контур)</p>
+            <div class="status-badge">● Полностью локальный автономный контур</div>
+        </div>
+
+        <div class="search-box">
+            <input type="text" id="queryInput" placeholder="Задайте вопрос по базе статей (например: как защитить смарт-контракт?)..." onkeypress="if(event.key === 'Enter') performSearch()">
+            <button onclick="performSearch()">Найти</button>
+        </div>
+
+        <!-- Окно ответа генеративного ИИ Qwen -->
+        <div id="aiBox" class="ai-box">
+            <div class="ai-title">🤖 Прямой ответ ИИ-ассистента Qwen2.5:</div>
+            <div id="aiContent" class="ai-content">Формирование точного ответа...</div>
+        </div>
+
+        <div id="results"></div>
+    </div>
+
+    <script>
+        window.onload = async function() {
+            await fetch('/init-database', { method: 'POST' });
+        };
+
+        async function performSearch() {
+            const query = document.getElementById('queryInput').value;
+            if (!query) return;
+
+            const resultsDiv = document.getElementById('results');
+            const aiBox = document.getElementById('aiBox');
+            const aiContent = document.getElementById('aiContent');
+
+            resultsDiv.innerHTML = '<p style="text-align:center; color:#6b7280;">Поиск релевантных источников в Qdrant...</p>';
+            aiBox.style.display = 'none';
+
+            try {
+                // 1. Делаем обычный семантический поиск источников
+                const response = await fetch(`/search?query=${encodeURIComponent(query)}`);
+                const data = await response.json();
+                
+                resultsDiv.innerHTML = '';
+                
+                if (data.results.length === 0) {
+                    resultsDiv.innerHTML = '<p>Ничего не найдено.</p>';
+                    return;
+                }
+
+                // Отрисовываем найденные статьи
+                const contextText = data.results[0].abstract;
+                data.results.forEach(article => {
+                    resultsDiv.innerHTML += `
+                        <div class="card">
+                            <div class="card-title">${article.title} <span class="score">Релевантность: ${(article.score * 100).toFixed(1)}%</span></div>
+                            <p class="card-abstract">${article.abstract}</p>
+                        </div>
+                    `;
+                });
+
+                // 2. Включаем генерацию ответа через Qwen (RAG)
+                aiBox.style.display = 'block';
+                aiContent.innerHTML = '<i>ИИ изучает текст найденных статей и пишет ответ...</i>';
+
+                const aiResponse = await fetch(`/ask?query=${encodeURIComponent(query)}&context=${encodeURIComponent(contextText)}`, { method: 'POST' });
+                const aiData = await aiResponse.json();
+                aiContent.innerText = aiData.answer;
+
+            } catch (error) {
+                resultsDiv.innerHTML = '<p style="color:red;">Ошибка сети.</p>';
+            }
+        }
+    </script>
+</body>
+</html>
+

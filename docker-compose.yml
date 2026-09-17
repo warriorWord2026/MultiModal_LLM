@@ -1,0 +1,37 @@
+version: '3.8'
+
+networks:
+  library_net:
+    driver: bridge
+
+services:
+  vector_db:
+    image: qdrant/qdrant:latest
+    container_name: library_qdrant_db
+    networks:
+      - library_net
+    ports:
+      - "6333:6333"
+    volumes:
+      - ./qdrant_data:/qdrant/storage:z
+    restart: always
+
+  search_engine:
+    build:
+      context: ./app_code
+    container_name: library_search_backend
+    networks:
+      - library_net
+    ports:
+      - "8080:8000"
+    environment:
+      - QDRANT_HOST=vector_db
+      - QDRANT_PORT=6333
+      - TRANSFORMERS_OFFLINE=1
+      #- HF_ENDPOINT=https://hf-mirror.com # 🌟 НОВАЯ СТРОКА: переключаем скачивание на зеркало
+      - HF_HUB_DISABLE_SYMLINKS_WARNING=1
+    volumes:
+      - ./sbert_model_cache:/app/model_cache
+    depends_on:
+      - vector_db
+    restart: always

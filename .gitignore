@@ -1,0 +1,12 @@
+# Локальные базы данных и тяжелые кэши моделей
+qdrant_data/
+sbert_model_cache/
+
+# Секретные настройки окружения
+.env
+*.env
+
+# Системный кэш Python
+__pycache__/
+*.pyc
+.pytest_cache/
