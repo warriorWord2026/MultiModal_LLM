@@ -10,7 +10,6 @@ from fastapi.templating import Jinja2Templates
 from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, VectorParams, PointStruct
 from sentence_transformers import SentenceTransformer
-
 app = FastAPI(title="Семантическая Библиотека ВУЗа")
 
 # Настраиваем папку с HTML-шаблонами    
