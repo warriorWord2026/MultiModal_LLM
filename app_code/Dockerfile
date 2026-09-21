@@ -1,7 +1,7 @@
 # Используем официальный легкий образ Python
 FROM python:3.10-slim
 
-# Устанавливаем системные утилиты для сборки (нужно для некоторых ИТ-библиотек)
+# Устанавливаем системные утилиты для сборки 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
@@ -9,7 +9,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Создаем рабочую директорию внутри контейнера
 WORKDIR /app
 
-# Копируем и устанавливаем только нужные библиотеки (чтобы контейнер не весил много)
+# Копируем и устанавливаем библиотеки 
 RUN pip install --no-cache-dir \
     fastapi \
     uvicorn \
