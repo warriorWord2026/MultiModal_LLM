@@ -28,8 +28,7 @@ services:
       - QDRANT_HOST=vector_db
       - QDRANT_PORT=6333
       - TRANSFORMERS_OFFLINE=1
-      #- HF_ENDPOINT=https://hf-mirror.com # 🌟 НОВАЯ СТРОКА: переключаем скачивание на зеркало
-      - HF_HUB_DISABLE_SYMLINKS_WARNING=1
+        - HF_HUB_DISABLE_SYMLINKS_WARNING=1
     volumes:
       - ./sbert_model_cache:/app/model_cache
     depends_on:
