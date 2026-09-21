@@ -15,7 +15,7 @@ app = FastAPI(title="Семантическая Библиотека ВУЗа")
 # Настраиваем папку с HTML-шаблонами    
 current_dir = os.path.dirname(os.path.abspath(__file__))
 templates = Jinja2Templates(directory=os.path.join(current_dir, "templates"))
-
+#
 # 1. Инициализация оффлайн-модели SBERT
 print("Загрузка локальной модели SBERT...")
 model_path = "/app/model_cache"
