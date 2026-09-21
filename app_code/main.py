@@ -1,5 +1,5 @@
 import os
-# Включаем строгий оффлайн-режим для всех локальных моделей
+# Включаем строгий оффлайн-режим для всех локальных моделей:
 os.environ["TRANSFORMERS_OFFLINE"] = "1"
 os.environ["HF_HUB_DISABLE_SYMLINKS_WARNING"] = "1"
 import httpx
@@ -12,11 +12,11 @@ from qdrant_client.models import Distance, VectorParams, PointStruct
 from sentence_transformers import SentenceTransformer
 app = FastAPI(title="Семантическая Библиотека ВУЗа")
 
-# Настраиваем папку с HTML-шаблонами    
+# Настраиваем папку с HTML-шаблонами:   
 current_dir = os.path.dirname(os.path.abspath(__file__))
 templates = Jinja2Templates(directory=os.path.join(current_dir, "templates"))
-#
-# 1. Инициализация оффлайн-модели SBERT
+
+# 1. Инициализация оффлайн-модели SBERT:
 print("Загрузка локальной модели SBERT...")
 model_path = "/app/model_cache"
 try:
@@ -28,14 +28,14 @@ except TypeError:
     model = SentenceTransformer(modules=[word_embedding_model, pooling_model])
 print("Модель успешно загружена!")
 
-# 2. Подключение к Qdrant в Docker
+# 2. Подключение к Qdrant в Docker:
 qdrant_host = os.getenv("QDRANT_HOST", "vector_db")
 qdrant_port = int(os.getenv("QDRANT_PORT", 6333))
 qdrant_client = QdrantClient(host=qdrant_host, port=qdrant_port)
 
 COLLECTION_NAME = "academic_articles"
 OLLAMA_URL = "http://host.docker.internal:11434/api/generate"
-# Наша текстовая база данных
+# Текстовая база данных:
 ARTICLES_DB = {
     1: {"title": "Нейросети в медицине", "abstract": "Применение сверточных нейросетей для автоматического распознавания опухолей на снимках МРТ головного мозга."},
     2: {"title": "Блокчейн и безопасность", "abstract": "Исследование уязвимостей смарт-контрактов в децентрализованных финансовых приложениях и методы их защиты."},
@@ -44,21 +44,21 @@ ARTICLES_DB = {
     5: {"title": "Глубокое обучение в лингвистике", "abstract": "Использование языковых моделей для автоматического анализа тональности отзывов студентов о качестве учебного процесса."}
 }
 
-# ИЗМЕНЕНИЕ: Теперь главная страница возвращает красивый HTML-интерфейс!
+# Инициализация векторной базы и ответ клиенту в html-формате:
 @app.get("/", response_class=HTMLResponse)
 def read_root(request: Request):
     return templates.TemplateResponse(request=request, name="index.html")
 
-# Эндпоинт генерации векторов (теперь вызывается автоматически интерфейсом)
+# Эндпоинт генерации векторов:
 @app.post("/init-database")
 def init_database():
-    # Импортируем нужные типы для квантования прямо тут, чтобы не лезть наверх файла
+    # Импортируем нужные типы для квантования:
     from qdrant_client.models import QuantizationConfig, ScalarQuantization, ScalarType
 
     qdrant_client.recreate_collection(
         collection_name=COLLECTION_NAME,
         vectors_config=VectorParams(size=768, distance=Distance.COSINE), # ваш размер 768
-        # ДОБАВЛЯЕМ СЮДА: сжатие векторов в 4 раза прямо при пересоздании коллекции
+        #Cжатие векторов в 4 раза прямо при пересоздании коллекции:
         quantization_config=QuantizationConfig(
             scalar=ScalarQuantization(
                 type=ScalarType.INT8,
@@ -76,7 +76,7 @@ def init_database():
     qdrant_client.upsert(collection_name=COLLECTION_NAME, points=points)
     return {"status": "success", "inserted_articles": len(points)}
 
-# Эндпоинт самого семантического поиска
+# Эндпоинт семантического поиска:
 @app.get("/search")
 def search_articles(query: str = Query(..., description="Поисковый запрос")):
     query_vector = model.encode(query).tolist()
@@ -94,10 +94,10 @@ def search_articles(query: str = Query(..., description="Поисковый за
             "abstract": hit.payload["abstract"]
         })
     return {"results": formatted_results}
-        # НОВЫЙ ЭНДПОИНТ: Генерация ответа ИИ на основе найденного контекста (RAG)
+# Создаем ассинхронного клиента.Генерация ответа ИИ на основе найденного контекста (RAG):
 @app.post("/ask")
 async def ask_ai(query: str, context: str):
-    # Формируем жесткий системный промпт (инструкцию) для Qwen
+# Формируем жесткий системный промпт (инструкцию) для Qwen
     prompt = f"""Если в тексте нет прямого ответа, ответь: "В предоставленных материалах нет ответа на этот вопрос".
 Не придумывай ничего от себя.Ты — строгий научный ассистент библиотеки ВУЗа.
 Используя ТОЛЬКО предоставленный текст научной статьи, четко и кратко ответь на вопрос. 
@@ -111,7 +111,7 @@ async def ask_ai(query: str, context: str):
 
 ОТВЕТ:"""
 
-    # Данные для отправки в вашу локальную Qwen2.5:1.5b
+# Данные для отправки в локальную Qwen2.5:1.5b
     payload = {
         "model": "qwen2.5:1.5b",
         "prompt": prompt,
