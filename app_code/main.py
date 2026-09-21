@@ -113,7 +113,7 @@ async def ask_ai(query: str, context: str):
 
     # Данные для отправки в вашу локальную Qwen2.5:1.5b
     payload = {
-        "model": "qwen2.5:1.5b",  # Имя вашей модели в Ollama
+        "model": "qwen2.5:1.5b",
         "prompt": prompt,
         "stream": False,  # Получить весь ответ сразу, а не по буквам
         "options": {
